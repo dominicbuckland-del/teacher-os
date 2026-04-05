@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import type { Class, Student, Assessment, ReportComment, Settings } from './types'
 import { generateId } from './utils'
+import { seedTerm2 } from './seed-term2'
 
 const defaultSettings: Settings = {
   schoolName: '',
@@ -77,6 +78,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    seedTerm2()
     setData(load())
     setReady(true)
   }, [])

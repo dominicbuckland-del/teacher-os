@@ -366,6 +366,9 @@ Make the week flow logically — build skills progressively across the days. Out
                         onClick={() => !isEditing && setEditingLesson(`${date}-${selectedClassId}`)}
                       >
                         <p className="text-[11px] text-text-muted font-medium mb-1">{dayName(date)} {formatDate(date)}</p>
+                        {lesson?.resources && (
+                          <p className="text-[10px] text-primary font-medium mb-1">{lesson.resources}</p>
+                        )}
                         {isEditing ? (
                           <div className="space-y-2" onClick={e => e.stopPropagation()}>
                             <input
@@ -394,7 +397,7 @@ Make the week flow logically — build skills progressively across the days. Out
                           </div>
                         ) : lesson?.topic ? (
                           <div>
-                            <p className="text-[13px] font-medium text-text">{lesson.topic}</p>
+                            <p className={cn('text-[13px] font-medium', lesson.topic.includes('LABOUR DAY') || lesson.topic.includes('Due') ? 'text-red-600' : 'text-text')}>{lesson.topic}</p>
                             {lesson.learningIntention && (
                               <p className="text-[11px] text-text-secondary mt-1">{lesson.learningIntention}</p>
                             )}
@@ -402,8 +405,10 @@ Make the week flow logically — build skills progressively across the days. Out
                               <p className="text-[11px] text-text-muted mt-1 line-clamp-2">{lesson.activities}</p>
                             )}
                           </div>
+                        ) : lesson ? (
+                          <p className="text-[11px] text-text-muted italic">Click to plan</p>
                         ) : (
-                          <p className="text-[11px] text-text-muted italic">Click to add</p>
+                          <p className="text-[11px] text-border italic">No lesson</p>
                         )}
                       </div>
                     )
