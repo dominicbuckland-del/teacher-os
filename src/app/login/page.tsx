@@ -17,15 +17,28 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
+      if (error) {
+        // Friendly error messages
+        if (error.message.includes('Invalid login')) {
+          setError('Incorrect email or password. Please try again.')
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email and click the confirmation link before signing in.')
+        } else {
+          setError(error.message)
+        }
+        setLoading(false)
+        return
+      }
+
       router.push('/')
       router.refresh()
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setLoading(false)
     }
   }
 

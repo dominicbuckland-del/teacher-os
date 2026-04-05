@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
   const router = useRouter()
 
   async function handleSignup(e: React.FormEvent) {
@@ -19,19 +20,66 @@ export default function SignupPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+      },
     })
 
-    if (error) {
-      setError(error.message)
+    if (signUpError) {
+      setError(signUpError.message)
       setLoading(false)
-    } else {
+      return
+    }
+
+    // If user is immediately confirmed (autoconfirm enabled), redirect
+    if (data.session) {
       router.push('/')
       router.refresh()
+      return
     }
+
+    // If email confirmation required, show a message
+    if (data.user && !data.session) {
+      // Try signing in immediately — some Supabase configs auto-confirm
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInData?.session) {
+        router.push('/')
+        router.refresh()
+        return
+      }
+
+      // If sign-in also fails, show confirmation message
+      setSuccess(true)
+      setLoading(false)
+      return
+    }
+
+    router.push('/')
+    router.refresh()
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-full flex items-center justify-center px-4 py-12 bg-background">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-emerald-100 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-semibold mb-2">Check your email</h1>
+          <p className="text-text-secondary text-[14px] mb-6">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
+          <Link href="/login" className="text-primary font-medium text-[14px]">Back to Sign In</Link>
+        </div>
+      </div>
+    )
   }
 
   return (
