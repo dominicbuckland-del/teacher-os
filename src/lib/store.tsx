@@ -58,6 +58,7 @@ interface Store {
   updateStudent(id: string, updates: Partial<Student>): void
   deleteStudent(id: string): void
   importStudents(classId: string, rows: { firstName: string; lastName: string; gender?: string; iep?: boolean; eald?: boolean }[]): void
+  importStudentsWithData(classId: string, rows: { firstName: string; lastName: string; gender?: string; iep?: boolean; eald?: boolean; grade?: string; effort?: string; strengths?: string; areasForGrowth?: string; attendance?: number; notes?: string }[]): void
   getStudentsForClass(classId: string): Student[]
 
   getAssessment(studentId: string, classId: string): Assessment
@@ -152,6 +153,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     persist(d => ({ ...d, students: [...d.students, ...newStudents] }))
   }, [persist])
 
+  const importStudentsWithData = useCallback((classId: string, rows: {
+    firstName: string; lastName: string; gender?: string; iep?: boolean; eald?: boolean
+    grade?: string; effort?: string; strengths?: string; areasForGrowth?: string; attendance?: number; notes?: string
+  }[]) => {
+    const newStudents: Student[] = []
+    const newAssessments: Assessment[] = []
+    for (const r of rows) {
+      const sid = generateId()
+      newStudents.push({
+        id: sid,
+        classId,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        gender: (['male', 'female', 'nonbinary'].includes(r.gender || '') ? r.gender : 'unspecified') as Student['gender'],
+        iep: r.iep || false,
+        eald: r.eald || false,
+        notes: '',
+      })
+      const hasAssessment = r.grade || r.effort || r.strengths || r.areasForGrowth || r.attendance || r.notes
+      if (hasAssessment) {
+        newAssessments.push({
+          id: generateId(),
+          studentId: sid,
+          classId,
+          grade: (['A','B','C','D','E'].includes(r.grade?.toUpperCase() || '') ? r.grade!.toUpperCase() : '') as Assessment['grade'],
+          effort: (['Excellent','Very Good','Satisfactory','Needs Improvement'].find(e => e.toLowerCase() === (r.effort || '').toLowerCase()) || '') as Assessment['effort'],
+          strengths: r.strengths || '',
+          areasForGrowth: r.areasForGrowth || '',
+          attendancePct: r.attendance || 0,
+          notes: r.notes || '',
+        })
+      }
+    }
+    persist(d => ({
+      ...d,
+      students: [...d.students, ...newStudents],
+      assessments: [...d.assessments, ...newAssessments],
+    }))
+  }, [persist])
+
   const getStudentsForClass = useCallback((classId: string): Student[] => {
     return data.students.filter(s => s.classId === classId).sort((a, b) => a.lastName.localeCompare(b.lastName))
   }, [data.students])
@@ -226,7 +267,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const store: Store = {
     data, ready,
     addClass, updateClass, deleteClass,
-    addStudent, updateStudent, deleteStudent, importStudents, getStudentsForClass,
+    addStudent, updateStudent, deleteStudent, importStudents, importStudentsWithData, getStudentsForClass,
     getAssessment, updateAssessment,
     getComment, updateComment,
     updateSettings,

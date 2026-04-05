@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useStore } from '@/lib/store'
@@ -18,6 +18,9 @@ export default function ClassDetailPage() {
   const [showCSV, setShowCSV] = useState(false)
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [genProgress, setGenProgress] = useState({ current: 0, total: 0, studentName: '', done: false })
+  const cancelRef = useRef(false)
 
   if (!store.ready) return <Loading />
 
@@ -35,10 +38,68 @@ export default function ClassDetailPage() {
   const comments = store.data.comments.filter(c => c.classId === id)
   const approved = comments.filter(c => c.status === 'approved').length
   const drafted = comments.filter(c => c.status === 'draft').length
-  const hasAssessmentData = students.some(s => {
-    const a = store.getAssessment(s.id, id)
-    return a.grade !== ''
+  const remaining = students.filter(s => {
+    const c = store.getComment(s.id, id)
+    return c.status !== 'approved' && c.status !== 'draft'
   })
+
+  async function generateAll() {
+    const toGenerate = students.filter(s => {
+      const c = store.getComment(s.id, id)
+      return c.status !== 'approved'
+    })
+    if (toGenerate.length === 0) return
+
+    setGenerating(true)
+    cancelRef.current = false
+    setGenProgress({ current: 0, total: toGenerate.length, studentName: '', done: false })
+
+    for (let i = 0; i < toGenerate.length; i++) {
+      if (cancelRef.current) break
+      const student = toGenerate[i]
+      const assessment = store.getAssessment(student.id, id)
+      setGenProgress({ current: i + 1, total: toGenerate.length, studentName: fullName(student), done: false })
+
+      try {
+        const res = await fetch('/api/generate-comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student,
+            assessment,
+            subject: cls!.subject,
+            yearLevel: cls!.yearLevel,
+            settings: store.data.settings,
+          }),
+        })
+
+        if (!res.ok) continue
+
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
+        let full = ''
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            full += decoder.decode(value)
+          }
+        }
+
+        if (full && !cancelRef.current) {
+          store.updateComment(student.id, id, {
+            aiDraft: full,
+            editedText: full,
+            status: 'draft',
+          })
+        }
+      } catch {
+        // Skip failed generations, continue with next
+      }
+    }
+
+    setGenProgress(p => ({ ...p, done: true }))
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
@@ -86,15 +147,29 @@ export default function ClassDetailPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
           Import CSV
         </button>
+        {students.length > 0 && (
+          <button
+            onClick={generateAll}
+            disabled={generating}
+            className="btn btn-primary btn-sm ml-auto"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+            Generate All Comments
+            {remaining.length > 0 && remaining.length < students.length && (
+              <span className="text-[11px] opacity-75">({remaining.length} remaining)</span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Student table */}
       {students.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-text-secondary text-[14px] mb-3">No students yet. Add students manually or import from a CSV file.</p>
+          <p className="text-text-secondary text-[14px] mb-1">No students yet.</p>
+          <p className="text-text-muted text-[13px] mb-4">Upload a CSV with student names and grades, or add them manually.</p>
           <div className="flex items-center justify-center gap-2">
-            <button onClick={() => setShowAddStudent(true)} className="btn btn-primary btn-sm">Add Student</button>
-            <button onClick={() => setShowCSV(true)} className="btn btn-secondary btn-sm">Import CSV</button>
+            <button onClick={() => setShowCSV(true)} className="btn btn-primary btn-sm">Import CSV</button>
+            <button onClick={() => setShowAddStudent(true)} className="btn btn-secondary btn-sm">Add Manually</button>
           </div>
         </div>
       ) : (
@@ -151,10 +226,58 @@ export default function ClassDetailPage() {
         <CSVImportModal
           onClose={() => setShowCSV(false)}
           onImport={(rows) => {
-            store.importStudents(id, rows)
+            store.importStudentsWithData(id, rows)
             setShowCSV(false)
           }}
         />
+      )}
+
+      {/* Generate All Progress */}
+      {generating && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-1">
+                {genProgress.done ? 'Generation Complete' : 'Generating Comments...'}
+              </h2>
+              {!genProgress.done ? (
+                <>
+                  <p className="text-text-secondary text-[13px] mb-4">
+                    Writing comment {genProgress.current} of {genProgress.total} — {genProgress.studentName}
+                  </p>
+                  <div className="h-2 bg-border-light rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{ width: `${(genProgress.current / genProgress.total) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-[12px] text-text-muted">
+                    ~{Math.ceil((genProgress.total - genProgress.current) * 4 / 60)} min remaining
+                  </p>
+                </>
+              ) : (
+                <p className="text-text-secondary text-[13px] mb-4">
+                  {genProgress.current} comments generated as drafts. Review and approve them in the workspace.
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-end px-6 py-4 border-t border-border">
+              {genProgress.done ? (
+                <div className="flex gap-2">
+                  <button onClick={() => setGenerating(false)} className="btn btn-secondary">Close</button>
+                  <Link href={`/workspace/${id}`} className="btn btn-primary">Open Workspace</Link>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { cancelRef.current = true; setGenerating(false) }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete Confirmation */}
@@ -357,25 +480,45 @@ function AddStudentModal({ onClose, onAdd }: { onClose: () => void; onAdd: (inpu
   )
 }
 
-function CSVImportModal({ onClose, onImport }: { onClose: () => void; onImport: (rows: { firstName: string; lastName: string }[]) => void }) {
+interface ImportRow {
+  firstName: string
+  lastName: string
+  grade?: string
+  effort?: string
+  strengths?: string
+  areasForGrowth?: string
+  attendance?: number
+  iep?: boolean
+  eald?: boolean
+  notes?: string
+}
+
+function CSVImportModal({ onClose, onImport }: { onClose: () => void; onImport: (rows: ImportRow[]) => void }) {
   const [text, setText] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
-  const parsed = text.trim() ? parseCSVInput(text) : []
+  const parsed = text.trim() ? parseFullCSV(text) : []
+  const hasGrades = parsed.some(r => r.grade)
+  const hasStrengths = parsed.some(r => r.strengths)
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="modal max-w-2xl" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-1">Import Students from CSV</h2>
-          <p className="text-text-secondary text-[13px] mb-4">
-            Paste CSV data or upload a file. Expected columns: <code className="text-[12px] bg-border-light px-1 rounded">firstName</code>, <code className="text-[12px] bg-border-light px-1 rounded">lastName</code> (or <code className="text-[12px] bg-border-light px-1 rounded">first name</code>, <code className="text-[12px] bg-border-light px-1 rounded">last name</code>).
+          <p className="text-text-secondary text-[13px] mb-2">
+            Upload a CSV or paste data. Auto-detects columns for names, grades, and assessment data.
           </p>
+          <div className="text-[12px] text-text-muted mb-4 bg-border-light/50 rounded-lg p-3">
+            <p className="font-medium text-text-secondary mb-1">Supported columns:</p>
+            <p><code className="bg-white px-1 rounded text-[11px]">firstName</code> <code className="bg-white px-1 rounded text-[11px]">lastName</code> (required) &middot; <code className="bg-white px-1 rounded text-[11px]">grade</code> (A-E) &middot; <code className="bg-white px-1 rounded text-[11px]">effort</code> &middot; <code className="bg-white px-1 rounded text-[11px]">strengths</code> &middot; <code className="bg-white px-1 rounded text-[11px]">areasForGrowth</code> &middot; <code className="bg-white px-1 rounded text-[11px]">attendance</code> &middot; <code className="bg-white px-1 rounded text-[11px]">iep</code> &middot; <code className="bg-white px-1 rounded text-[11px]">eald</code></p>
+            <p className="mt-1">Column names are flexible — e.g. "First Name", "first_name", "given" all map to firstName.</p>
+          </div>
 
           <div className="mb-3">
             <input
               ref={fileRef}
               type="file"
-              accept=".csv"
+              accept=".csv,.txt"
               className="hidden"
               onChange={e => {
                 const file = e.target.files?.[0]
@@ -390,13 +533,48 @@ function CSVImportModal({ onClose, onImport }: { onClose: () => void; onImport: 
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder={`firstName,lastName\nEmma,Wilson\nJack,Chen\nMia,Johnson`}
-            rows={8}
+            placeholder={`firstName,lastName,grade,effort,strengths,areasForGrowth\nEmma,Wilson,B,Very Good,Strong analytical writing,Develop paragraph structure\nJack,Chen,A,Excellent,Exceptional reasoning,Extend to real-world applications\nMia,Johnson,C,Satisfactory,Growing confidence,Focus on evidence in arguments`}
+            rows={10}
             className="text-[13px] font-mono"
           />
 
           {parsed.length > 0 && (
-            <p className="text-[12px] text-primary mt-2">{parsed.length} student{parsed.length !== 1 ? 's' : ''} found</p>
+            <div className="mt-3 p-3 bg-primary-light rounded-lg">
+              <p className="text-[13px] text-primary-hover font-medium">
+                {parsed.length} student{parsed.length !== 1 ? 's' : ''} detected
+              </p>
+              <p className="text-[12px] text-primary-hover/70 mt-0.5">
+                {hasGrades ? `${parsed.filter(r => r.grade).length} with grades` : 'No grades detected'}
+                {hasStrengths ? ` · ${parsed.filter(r => r.strengths).length} with strengths/growth data` : ''}
+              </p>
+              {parsed.length > 0 && (
+                <div className="mt-2 max-h-32 overflow-y-auto">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="text-left text-primary-hover/60">
+                        <th className="pb-1 pr-2">Name</th>
+                        <th className="pb-1 pr-2">Grade</th>
+                        <th className="pb-1 pr-2">Effort</th>
+                        <th className="pb-1">Strengths</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-primary-hover/80">
+                      {parsed.slice(0, 5).map((r, i) => (
+                        <tr key={i}>
+                          <td className="pr-2 py-0.5">{r.firstName} {r.lastName}</td>
+                          <td className="pr-2 py-0.5">{r.grade || '-'}</td>
+                          <td className="pr-2 py-0.5">{r.effort || '-'}</td>
+                          <td className="py-0.5 truncate max-w-[200px]">{r.strengths || '-'}</td>
+                        </tr>
+                      ))}
+                      {parsed.length > 5 && (
+                        <tr><td colSpan={4} className="pt-1 text-primary-hover/50">...and {parsed.length - 5} more</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
@@ -407,6 +585,7 @@ function CSVImportModal({ onClose, onImport }: { onClose: () => void; onImport: 
             className="btn btn-primary"
           >
             Import {parsed.length} Student{parsed.length !== 1 ? 's' : ''}
+            {hasGrades && ' with Data'}
           </button>
         </div>
       </div>
@@ -414,15 +593,38 @@ function CSVImportModal({ onClose, onImport }: { onClose: () => void; onImport: 
   )
 }
 
-function parseCSVInput(text: string): { firstName: string; lastName: string }[] {
+function parseFullCSV(text: string): ImportRow[] {
   const rows = parseCSV(text)
   return rows
     .map(r => {
-      const firstName = r.firstname || r.first || r.givenname || r.given || ''
-      const lastName = r.lastname || r.last || r.surname || r.family || r.familyname || ''
-      return { firstName: firstName.trim(), lastName: lastName.trim() }
+      const firstName = (r.firstname || r.first || r.givenname || r.given || r.firstnames || '').trim()
+      const lastName = (r.lastname || r.last || r.surname || r.family || r.familyname || r.lastnames || '').trim()
+      if (!firstName || !lastName) return null
+
+      const grade = (r.grade || r.result || r.mark || r.level || '').trim().toUpperCase()
+      const effort = (r.effort || r.effortgrade || r.effortlevel || r.behaviour || r.behavior || '').trim()
+      const strengths = (r.strengths || r.strength || r.positives || r.positive || '').trim()
+      const areasForGrowth = (r.areasforgrowth || r.growth || r.areasforimprovement || r.improvement || r.nextsteps || r.areas || '').trim()
+      const attendanceRaw = (r.attendance || r.attendancepct || r.attendancepercent || '').trim()
+      const attendance = attendanceRaw ? Number(attendanceRaw.replace('%', '')) || 0 : 0
+      const iep = ['true', 'yes', 'y', '1'].includes((r.iep || r.individualplan || '').toLowerCase())
+      const eald = ['true', 'yes', 'y', '1'].includes((r.eald || r.eal || r.esol || r.ell || '').toLowerCase())
+      const notes = (r.notes || r.note || r.teachernotes || r.comments || '').trim()
+
+      return {
+        firstName,
+        lastName,
+        grade: ['A', 'B', 'C', 'D', 'E'].includes(grade) ? grade : undefined,
+        effort: ['Excellent', 'Very Good', 'Satisfactory', 'Needs Improvement'].find(e => e.toLowerCase() === effort.toLowerCase()) || undefined,
+        strengths: strengths || undefined,
+        areasForGrowth: areasForGrowth || undefined,
+        attendance: attendance || undefined,
+        iep,
+        eald,
+        notes: notes || undefined,
+      } as ImportRow
     })
-    .filter(r => r.firstName && r.lastName)
+    .filter((r): r is ImportRow => r !== null)
 }
 
 function Stat({ label, value, total, color }: { label: string; value: number; total?: number; color?: string }) {
