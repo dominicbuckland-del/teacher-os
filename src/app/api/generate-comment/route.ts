@@ -9,26 +9,30 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json() as {
-    student: Student
-    assessment: Assessment
-    subject: string
-    yearLevel: number
-    settings: Settings
+    student?: Student
+    assessment?: Assessment
+    subject?: string
+    yearLevel?: number
+    settings?: Settings
+    customPrompt?: string
   }
 
-  const prompt = buildCommentPrompt(
-    body.student,
-    body.assessment,
-    body.subject,
-    body.yearLevel,
-    body.settings
+  // Support custom prompts for email personalisation, lesson planning, resource generation
+  const prompt = body.customPrompt || buildCommentPrompt(
+    body.student!,
+    body.assessment!,
+    body.subject || '',
+    body.yearLevel || 7,
+    body.settings || { schoolName: '', styleGuide: '', tone: 'balanced', commentLength: 'medium', pronouns: 'they' }
   )
+
+  const maxTokens = body.customPrompt ? 1500 : 400
 
   const client = new Anthropic({ apiKey })
 
   const stream = client.messages.stream({
     model: 'claude-sonnet-4-6',
-    max_tokens: 400,
+    max_tokens: maxTokens,
     messages: [{ role: 'user', content: prompt }],
   })
 
