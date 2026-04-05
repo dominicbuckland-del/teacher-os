@@ -48,6 +48,40 @@ export interface Settings {
   pronouns: 'they' | 'gendered' | 'name-only'
 }
 
+export interface BehaviourIncident {
+  id: string
+  studentId: string
+  classId: string
+  date: string
+  time: string
+  type: 'positive' | 'concern'
+  category: string
+  description: string
+  actionTaken: string
+  severity: 'minor' | 'moderate' | 'major'
+}
+
+export interface ParentComm {
+  id: string
+  studentId: string
+  date: string
+  commType: 'email' | 'phone' | 'meeting' | 'note'
+  subject: string
+  notes: string
+  followUpDate: string
+  followUpDone: boolean
+}
+
+export interface FeedbackEntry {
+  id: string
+  studentId: string
+  classId: string
+  date: string
+  taskName: string
+  studentWork: string
+  feedback: string
+}
+
 export type Grade = Assessment['grade']
 export type Effort = Assessment['effort']
 export type CommentStatus = ReportComment['status']

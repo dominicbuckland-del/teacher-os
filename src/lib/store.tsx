@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import type { Class, Student, Assessment, ReportComment, Settings } from './types'
+import type { Class, Student, Assessment, ReportComment, Settings, BehaviourIncident, ParentComm, FeedbackEntry } from './types'
 import { generateId } from './utils'
 import { seedTerm2 } from './seed-term2'
 
@@ -18,6 +18,9 @@ interface StoreData {
   students: Student[]
   assessments: Assessment[]
   comments: ReportComment[]
+  behaviourIncidents: BehaviourIncident[]
+  parentComms: ParentComm[]
+  feedbackEntries: FeedbackEntry[]
   settings: Settings
 }
 
@@ -26,6 +29,9 @@ const empty: StoreData = {
   students: [],
   assessments: [],
   comments: [],
+  behaviourIncidents: [],
+  parentComms: [],
+  feedbackEntries: [],
   settings: defaultSettings,
 }
 
@@ -67,6 +73,18 @@ interface Store {
 
   getComment(studentId: string, classId: string): ReportComment
   updateComment(studentId: string, classId: string, updates: Partial<ReportComment>): void
+
+  addBehaviourIncident(input: Omit<BehaviourIncident, 'id'>): BehaviourIncident
+  deleteBehaviourIncident(id: string): void
+  getBehaviourForStudent(studentId: string): BehaviourIncident[]
+
+  addParentComm(input: Omit<ParentComm, 'id'>): ParentComm
+  updateParentComm(id: string, updates: Partial<ParentComm>): void
+  deleteParentComm(id: string): void
+  getCommsForStudent(studentId: string): ParentComm[]
+
+  addFeedbackEntry(input: Omit<FeedbackEntry, 'id'>): FeedbackEntry
+  getFeedbackForStudent(studentId: string): FeedbackEntry[]
 
   updateSettings(updates: Partial<Settings>): void
 }
@@ -261,6 +279,51 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [persist])
 
+  // Behaviour
+  const addBehaviourIncident = useCallback((input: Omit<BehaviourIncident, 'id'>): BehaviourIncident => {
+    const incident: BehaviourIncident = { id: generateId(), ...input }
+    persist(d => ({ ...d, behaviourIncidents: [incident, ...(d.behaviourIncidents || [])] }))
+    return incident
+  }, [persist])
+
+  const deleteBehaviourIncident = useCallback((id: string) => {
+    persist(d => ({ ...d, behaviourIncidents: (d.behaviourIncidents || []).filter(b => b.id !== id) }))
+  }, [persist])
+
+  const getBehaviourForStudent = useCallback((studentId: string): BehaviourIncident[] => {
+    return (data.behaviourIncidents || []).filter(b => b.studentId === studentId).sort((a, b) => b.date.localeCompare(a.date))
+  }, [data.behaviourIncidents])
+
+  // Parent Comms
+  const addParentComm = useCallback((input: Omit<ParentComm, 'id'>): ParentComm => {
+    const comm: ParentComm = { id: generateId(), ...input }
+    persist(d => ({ ...d, parentComms: [comm, ...(d.parentComms || [])] }))
+    return comm
+  }, [persist])
+
+  const updateParentComm = useCallback((id: string, updates: Partial<ParentComm>) => {
+    persist(d => ({ ...d, parentComms: (d.parentComms || []).map(c => c.id === id ? { ...c, ...updates } : c) }))
+  }, [persist])
+
+  const deleteParentComm = useCallback((id: string) => {
+    persist(d => ({ ...d, parentComms: (d.parentComms || []).filter(c => c.id !== id) }))
+  }, [persist])
+
+  const getCommsForStudent = useCallback((studentId: string): ParentComm[] => {
+    return (data.parentComms || []).filter(c => c.studentId === studentId).sort((a, b) => b.date.localeCompare(a.date))
+  }, [data.parentComms])
+
+  // Feedback
+  const addFeedbackEntry = useCallback((input: Omit<FeedbackEntry, 'id'>): FeedbackEntry => {
+    const entry: FeedbackEntry = { id: generateId(), ...input }
+    persist(d => ({ ...d, feedbackEntries: [entry, ...(d.feedbackEntries || [])] }))
+    return entry
+  }, [persist])
+
+  const getFeedbackForStudent = useCallback((studentId: string): FeedbackEntry[] => {
+    return (data.feedbackEntries || []).filter(f => f.studentId === studentId).sort((a, b) => b.date.localeCompare(a.date))
+  }, [data.feedbackEntries])
+
   // Settings
   const updateSettings = useCallback((updates: Partial<Settings>) => {
     persist(d => ({ ...d, settings: { ...d.settings, ...updates } }))
@@ -272,6 +335,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addStudent, updateStudent, deleteStudent, importStudents, importStudentsWithData, getStudentsForClass,
     getAssessment, updateAssessment,
     getComment, updateComment,
+    addBehaviourIncident, deleteBehaviourIncident, getBehaviourForStudent,
+    addParentComm, updateParentComm, deleteParentComm, getCommsForStudent,
+    addFeedbackEntry, getFeedbackForStudent,
     updateSettings,
   }
 
