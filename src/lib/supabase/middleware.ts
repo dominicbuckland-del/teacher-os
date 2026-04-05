@@ -13,6 +13,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    db: { schema: process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || 'public' },
     cookies: {
       getAll() { return request.cookies.getAll() },
       setAll(cookiesToSet) {
