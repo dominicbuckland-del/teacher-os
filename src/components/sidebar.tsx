@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 const nav = [
   { href: '/', label: 'Dashboard', icon: DashboardIcon },
   { href: '/emails', label: 'Emails', icon: EmailIcon },
   { href: '/planner', label: 'Planner', icon: CalendarIcon },
   { href: '/resources', label: 'Resources', icon: ResourceIcon },
+  { href: '/context', label: 'My Context', icon: ContextIcon },
   { href: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
@@ -64,8 +66,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
-          <p className="text-[11px] text-text-muted">Teacher OS v1.2</p>
+        <div className="p-3 border-t border-border">
+          <button
+            onClick={async () => {
+              const supabase = createClient()
+              await supabase.auth.signOut()
+              onClose()
+              window.location.href = '/login'
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-text-muted hover:bg-border-light hover:text-text transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+            Sign Out
+          </button>
         </div>
       </aside>
     </>
@@ -87,6 +100,10 @@ function CalendarIcon({ active }: { active: boolean }) {
 function ResourceIcon({ active }: { active: boolean }) {
   const c = active ? '#0F766E' : '#64748B'
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>
+}
+function ContextIcon({ active }: { active: boolean }) {
+  const c = active ? '#0F766E' : '#64748B'
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
 }
 function SettingsIcon({ active }: { active: boolean }) {
   const c = active ? '#0F766E' : '#64748B'
