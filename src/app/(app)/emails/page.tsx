@@ -410,9 +410,9 @@ Write the personalised email now. Include the subject line at the top as "Subjec
   }
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex flex-col md:flex-row">
       {/* Left panel — template list */}
-      <div className="w-[280px] border-r border-border bg-surface overflow-y-auto shrink-0 flex flex-col">
+      <div className={cn('md:w-[280px] border-b md:border-b-0 md:border-r border-border bg-surface overflow-y-auto shrink-0 flex flex-col', selectedId && 'hidden md:flex')}>
         <div className="p-4 border-b border-border">
           <h1 className="text-lg font-semibold mb-3">Email Templates</h1>
           <div className="flex flex-wrap gap-1">
@@ -454,9 +454,14 @@ Write the personalised email now. Include the subject line at the top as "Subjec
       </div>
 
       {/* Right panel — template detail */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={cn('flex-1 overflow-y-auto', !selectedId && 'hidden md:block')}>
         {selected && (
-          <div className="max-w-3xl mx-auto px-8 py-8">
+          <div className="max-w-3xl mx-auto px-4 md:px-8 py-4 md:py-8">
+            {/* Mobile back button */}
+            <button onClick={() => setSelectedId(defaultTemplates[0]?.id)} className="md:hidden text-[13px] text-primary mb-3 flex items-center gap-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
+              All Templates
+            </button>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold">{selected.name}</h2>

@@ -102,7 +102,7 @@ export default function ClassDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-10">
+    <div className="max-w-5xl mx-auto px-4 md:px-8 py-6 md:py-10">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
@@ -173,8 +173,8 @@ export default function ClassDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-[14px]">
+        <div className="card overflow-x-auto">
+          <table className="w-full text-[14px] min-w-[600px]">
             <thead>
               <tr className="border-b border-border bg-border-light/50">
                 <th className="text-left p-3 pl-4 font-medium text-text-secondary text-[12px] uppercase tracking-wide">Student</th>

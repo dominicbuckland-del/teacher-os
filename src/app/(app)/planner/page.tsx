@@ -259,29 +259,29 @@ Output ONLY these 3 lines, nothing else.`,
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white">
       {/* ─── Top bar ─── */}
-      <div className="px-6 py-4 flex items-center justify-between border-b border-border-light shrink-0">
+      <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between border-b border-border-light shrink-0">
         <div className="flex items-center gap-1">
           <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-          <h1 className="text-[17px] font-semibold tracking-tight min-w-[180px] text-center">{formatMonthYear(viewYear, viewMonth)}</h1>
+          <h1 className="text-[15px] md:text-[17px] font-semibold tracking-tight min-w-[140px] md:min-w-[180px] text-center">{formatMonthYear(viewYear, viewMonth)}</h1>
           <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
           </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <button onClick={goToToday} className="text-[13px] font-medium text-primary hover:text-primary-hover px-2 py-1 rounded-md hover:bg-primary-light transition-colors">Today</button>
-          <button onClick={() => setShowAddTerm(true)} className="btn btn-ghost btn-sm text-[13px]">Add Term</button>
-          <button onClick={() => setShowExport(true)} className="btn btn-secondary btn-sm text-[13px]">
+          <button onClick={() => setShowAddTerm(true)} className="btn btn-ghost btn-sm text-[12px] md:text-[13px] hidden md:inline-flex">Add Term</button>
+          <button onClick={() => setShowExport(true)} className="btn btn-secondary btn-sm text-[12px] md:text-[13px]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-            Export
+            <span className="hidden md:inline">Export</span>
           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-y-auto md:overflow-hidden">
         {/* ─── Left: Month calendar ─── */}
-        <div className="w-[340px] border-r border-border-light p-5 shrink-0 overflow-y-auto">
+        <div className="md:w-[340px] md:border-r border-b md:border-b-0 border-border-light p-4 md:p-5 shrink-0 md:overflow-y-auto">
           {/* Week day headers */}
           <div className="grid grid-cols-7 mb-1">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
@@ -333,9 +333,26 @@ Output ONLY these 3 lines, nothing else.`,
             })}
           </div>
 
-          {/* Term indicators */}
+          {/* Class legend (inline on mobile, stacked on desktop) */}
+          {classes.length > 0 && (
+            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-border-light">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 md:flex-col md:gap-y-0">
+                {classes.map((c, i) => {
+                  const color = getClassColor(c.id, i)
+                  return (
+                    <div key={c.id} className="flex items-center gap-1.5 md:gap-2 md:py-1">
+                      <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded" style={{ background: color.dot }} />
+                      <span className="text-[11px] md:text-[12px] text-text-secondary">{c.name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Term indicators (hidden on mobile) */}
           {data.terms.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border-light">
+            <div className="hidden md:block mt-4 pt-4 border-t border-border-light">
               {data.terms.map(t => (
                 <div key={t.id} className="flex items-center justify-between py-1.5">
                   <div className="flex items-center gap-2">
@@ -349,27 +366,11 @@ Output ONLY these 3 lines, nothing else.`,
               ))}
             </div>
           )}
-
-          {/* Class legend */}
-          {classes.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border-light">
-              <p className="text-[11px] text-text-muted uppercase tracking-wide font-medium mb-2">Classes</p>
-              {classes.map((c, i) => {
-                const color = getClassColor(c.id, i)
-                return (
-                  <div key={c.id} className="flex items-center gap-2 py-1">
-                    <span className="w-2.5 h-2.5 rounded" style={{ background: color.dot }} />
-                    <span className="text-[12px] text-text-secondary">{c.name}</span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
 
         {/* ─── Right: Day schedule ─── */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-6 py-6">
+        <div className="flex-1 md:overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-6">
             {/* Day header */}
             <div className="flex items-center justify-between mb-5">
               <div>

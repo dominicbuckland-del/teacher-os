@@ -145,39 +145,58 @@ export default function WorkspacePage() {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Top bar */}
-      <header className="h-13 border-b border-border bg-surface flex items-center px-4 gap-4 shrink-0">
+      <header className="min-h-[48px] md:h-13 border-b border-border bg-surface flex flex-wrap md:flex-nowrap items-center px-3 md:px-4 gap-2 md:gap-4 shrink-0 py-2 md:py-0">
         <button onClick={() => router.push(`/classes/${classId}`)} className="btn btn-ghost btn-sm p-1.5">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
 
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-[14px]">{cls.name}</span>
-          <span className="text-text-muted text-[13px] ml-2">{cls.subject} — Year {cls.yearLevel}</span>
+          <span className="text-text-muted text-[12px] md:text-[13px] ml-2 hidden sm:inline">{cls.subject} — Year {cls.yearLevel}</span>
         </div>
 
         {/* Progress */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-32 h-1.5 bg-border-light rounded-full overflow-hidden">
+            <div className="w-20 md:w-32 h-1.5 bg-border-light rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${pct}%`, background: pct === 100 ? '#10B981' : '#0D9488' }}
               />
             </div>
-            <span className="text-[13px] text-text-secondary whitespace-nowrap">
-              <strong>{approved}</strong>/{total} approved
+            <span className="text-[12px] md:text-[13px] text-text-secondary whitespace-nowrap">
+              <strong>{approved}</strong>/{total}
             </span>
           </div>
-          <button onClick={() => setShowExport(true)} className="btn btn-secondary btn-sm">
+          <button onClick={() => setShowExport(true)} className="btn btn-secondary btn-sm text-[12px]">
             Export
           </button>
         </div>
       </header>
 
+      {/* Mobile student selector */}
+      <div className="md:hidden border-b border-border bg-surface px-3 py-2">
+        <select
+          value={selected?.id || ''}
+          onChange={e => setSelectedId(e.target.value)}
+          className="w-full text-[13px] py-2 px-3"
+        >
+          {students.map(s => {
+            const c = store.getComment(s.id, classId)
+            const grade = store.getAssessment(s.id, classId).grade
+            return (
+              <option key={s.id} value={s.id}>
+                {c.status === 'approved' ? '\u2713' : c.status === 'draft' ? '\u25CB' : '\u25CB'} {s.lastName}, {s.firstName}{grade ? ` (${grade})` : ''}
+              </option>
+            )
+          })}
+        </select>
+      </div>
+
       {/* Main area */}
       <div className="flex-1 flex min-h-0">
-        {/* Left panel — student list */}
-        <div className="w-[260px] border-r border-border bg-surface overflow-y-auto shrink-0">
+        {/* Left panel — student list (desktop only) */}
+        <div className="hidden md:block w-[260px] border-r border-border bg-surface overflow-y-auto shrink-0">
           <div className="p-3">
             <p className="text-[11px] text-text-muted uppercase tracking-wide font-medium px-2 mb-2">
               Students ({total})
@@ -210,7 +229,7 @@ export default function WorkspacePage() {
         {/* Right panel — student context + comment editor */}
         <div className="flex-1 overflow-y-auto">
           {selected && assessment && comment ? (
-            <div className="max-w-3xl mx-auto px-8 py-8">
+            <div className="max-w-3xl mx-auto px-4 md:px-8 py-4 md:py-8">
               {/* Student context card */}
               <div className="card p-5 mb-6">
                 <div className="flex items-start justify-between mb-3">
@@ -382,8 +401,8 @@ export default function WorkspacePage() {
                 )}
               </div>
 
-              {/* Keyboard hints */}
-              <div className="flex items-center justify-center gap-4 mt-6 text-[11px] text-text-muted">
+              {/* Keyboard hints (desktop only) */}
+              <div className="hidden md:flex items-center justify-center gap-4 mt-6 text-[11px] text-text-muted">
                 <span><span className="kbd">↑↓</span> Navigate students</span>
                 <span><span className="kbd">⌘G</span> Generate</span>
                 <span><span className="kbd">⌘↵</span> Approve & next</span>

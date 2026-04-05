@@ -23,6 +23,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Safe area for iOS notch / home indicator */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Touch targets */
+@media (pointer: coarse) {
+  button, a, select, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  select { min-height: 44px; }
+}
+
+/* Prevent text size adjust on orientation change */
+html { -webkit-text-size-adjust: 100%; }
+
 /* Native-feel scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
