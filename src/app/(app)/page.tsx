@@ -87,13 +87,19 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Quick actions */}
-      {classes.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickAction href="/rubrics" label="Create Rubric" icon="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-          <QuickAction href="/behaviour" label="Log Behaviour" icon="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-          <QuickAction href="/emails" label="Draft Email" icon="M2 4h20v16H2zM22 7l-10 7L2 7" />
-          <QuickAction href="/relief" label="Relief Notes" icon="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 2h6v4H9z" />
+      {/* What you can do — shown when classes exist */}
+      {classes.length > 0 && allDone && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <ActionCard
+            href={classes[0] ? `/workspace/${classes[0].id}` : '/'}
+            title="Write Reports"
+            description="Generate AI-powered report comments for an entire class"
+            stat={approvedComments > 0 ? `${approvedComments} approved` : undefined}
+            primary
+          />
+          <ActionCard href="/rubrics" title="Create Assessment Rubric" description="AI generates a full A-E rubric from your task brief" />
+          <ActionCard href="/emails" title="Draft a Parent Email" description="12 templates — personalised with AI in one click" />
+          <ActionCard href="/relief" title="Generate Relief Notes" description="One-click substitute teacher handover for any day" />
         </div>
       )}
 
@@ -128,13 +134,12 @@ export default function Dashboard() {
   )
 }
 
-function QuickAction({ href, label, icon }: { href: string; label: string; icon: string }) {
+function ActionCard({ href, title, description, stat, primary }: { href: string; title: string; description: string; stat?: string; primary?: boolean }) {
   return (
-    <Link href={href} className="card p-3 text-center hover:border-primary/30 hover:shadow-sm transition-all group">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-1.5 group-hover:stroke-primary transition-colors">
-        <path d={icon} />
-      </svg>
-      <p className="text-[12px] font-medium text-text-secondary group-hover:text-primary transition-colors">{label}</p>
+    <Link href={href} className={cn('card p-4 hover:shadow-md transition-all group block', primary && 'border-primary/30 bg-primary-light/20')}>
+      <h3 className={cn('font-semibold text-[14px] group-hover:text-primary transition-colors', primary && 'text-primary-hover')}>{title}</h3>
+      <p className="text-[12px] text-text-muted mt-0.5">{description}</p>
+      {stat && <p className="text-[11px] text-primary font-medium mt-2">{stat}</p>}
     </Link>
   )
 }

@@ -8,17 +8,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
 
-  // Page titles for mobile header
   const titles: Record<string, string> = {
-    '/': 'Dashboard',
-    '/emails': 'Email Templates',
-    '/planner': 'Planner',
-    '/resources': 'Resources',
-    '/settings': 'Settings',
+    '/': 'Dashboard', '/emails': 'Emails', '/planner': 'Planner', '/resources': 'Resources',
+    '/settings': 'Settings', '/rubrics': 'Assessments', '/behaviour': 'Behaviour',
+    '/students': 'Students', '/feedback': 'Feedback', '/comms': 'Parent Comms',
+    '/relief': 'Relief Notes', '/context': 'My Context', '/onboarding': 'Setup',
+    '/classes': 'Class', '/workspace': 'Reports',
   }
-  const title = Object.entries(titles).find(([path]) =>
-    path === '/' ? pathname === '/' : pathname.startsWith(path)
-  )?.[1] || 'Teacher OS'
+  const title = Object.entries(titles).find(([p]) => p === '/' ? pathname === '/' : pathname.startsWith(p))?.[1] || 'Teacher OS'
 
   return (
     <div className="h-full flex flex-col md:flex-row">
