@@ -13,12 +13,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     '/settings': 'Settings', '/rubrics': 'Assessments', '/behaviour': 'Behaviour',
     '/students': 'Students', '/feedback': 'Feedback', '/comms': 'Parent Comms',
     '/relief': 'Relief Notes', '/context': 'My Context', '/onboarding': 'Setup',
-    '/classes': 'Class', '/workspace': 'Reports',
+    '/classes': 'Class', '/workspace': 'Reports', '/billing': 'Billing',
   }
   const title = Object.entries(titles).find(([p]) => p === '/' ? pathname === '/' : pathname.startsWith(p))?.[1] || 'Teacher OS'
 
   return (
-    <div className="h-full flex flex-col md:flex-row">
+    <div className="h-full overflow-hidden flex flex-col md:flex-row">
       {/* Mobile header */}
       <header className="md:hidden flex items-center h-12 px-4 border-b border-border bg-surface shrink-0 safe-top">
         <button

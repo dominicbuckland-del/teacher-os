@@ -1,5 +1,29 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'DomaineText';
+  src: url('/fonts/DomaineText-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GTAmerica';
+  src: url('/fonts/GT-America-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GTAmerica';
+  src: url('/fonts/GT-America-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: #F8FAFB;
   --color-surface: #FFFFFF;
@@ -225,6 +249,15 @@ textarea {
   animation: blink 0.8s infinite;
   color: var(--color-primary);
   margin-left: 1px;
+}
+
+/* Marketing page responsive grids */
+@media (max-width: 767px) {
+  .mktg-3col { grid-template-columns: 1fr !important; }
+  .mktg-2col { grid-template-columns: 1fr !important; }
+  .mktg-4col { grid-template-columns: 1fr 1fr !important; }
+  .mktg-footer-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+  .mktg-nav-links { display: none !important; }
 }
 
 /* Keyboard shortcut hint */

@@ -31,13 +31,15 @@ export async function updateSession(request: NextRequest) {
 
   // Public paths that don't require auth
   const isPublic =
+    pathname === '/' ||
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/icon') ||
     pathname.startsWith('/apple-icon') ||
-    pathname.startsWith('/manifest')
+    pathname.startsWith('/manifest') ||
+    pathname.startsWith('/fonts/')
 
   // Redirect unauthenticated users to login
   if (!user && !isPublic) {

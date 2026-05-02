@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useStore } from '@/lib/store'
 import { cn, fullName, gradeColor, statusColor, exportAsCSV } from '@/lib/utils'
 import type { Student, Assessment, ReportComment } from '@/lib/types'
@@ -14,6 +15,7 @@ export default function WorkspacePage() {
   const [streaming, setStreaming] = useState(false)
   const [streamText, setStreamText] = useState('')
   const [showExport, setShowExport] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(false)
   const editorRef = useRef<HTMLTextAreaElement>(null)
 
   const cls = store.data.classes.find(c => c.id === classId)
@@ -95,6 +97,12 @@ export default function WorkspacePage() {
           settings: store.data.settings,
         }),
       })
+
+      if (res.status === 402) {
+        setShowUpgrade(true)
+        setStreaming(false)
+        return
+      }
 
       if (!res.ok) {
         const err = await res.text()
@@ -424,6 +432,31 @@ export default function WorkspacePage() {
           className={cls.name}
           onClose={() => setShowExport(false)}
         />
+      )}
+
+      {/* Upgrade modal */}
+      {showUpgrade && (
+        <div className="modal-backdrop" onClick={() => setShowUpgrade(false)}>
+          <div className="modal max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-primary-light flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold mb-2">Free trial complete</h2>
+              <p className="text-text-secondary text-[14px] mb-6">
+                You've used all 10 free AI generations. Upgrade to Pro for unlimited report comments, rubrics, and email drafts.
+              </p>
+              <Link href="/billing" className="btn btn-primary w-full justify-center mb-2">
+                Upgrade to Pro — from $15/mo
+              </Link>
+              <button onClick={() => setShowUpgrade(false)} className="btn btn-ghost w-full text-text-muted">
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -104,7 +104,18 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        <div className="p-2 border-t border-border">
+        <div className="p-2 border-t border-border space-y-0.5">
+          <Link href="/billing" onClick={onClose}
+            className={cn(
+              'flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[13px] font-medium transition-colors',
+              pathname === '/billing' ? 'bg-primary-light text-primary-hover' : 'text-text-muted hover:bg-border-light hover:text-text'
+            )}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={pathname === '/billing' ? '#0F766E' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+            Billing
+          </Link>
           <button
             onClick={async () => { const s = createClient(); await s.auth.signOut(); onClose(); window.location.href = '/login' }}
             className="w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[13px] text-text-muted hover:bg-border-light hover:text-text transition-colors"

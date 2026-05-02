@@ -18,12 +18,21 @@ export async function POST(request: Request) {
     customPrompt?: string
   }
 
-  // Fetch user's context documents from Supabase
+  // Trial gate + context fetch
   let contextBlock = ''
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+      // Check usage limit (RPC is SECURITY DEFINER, safe to call with user JWT)
+      const { data: usage, error: usageError } = await supabase.rpc('check_and_increment_usage')
+      if (!usageError && usage && !usage.allowed) {
+        return Response.json(
+          { error: 'trial_exhausted', comments_generated: usage.comments_generated, limit: usage.limit },
+          { status: 402 }
+        )
+      }
+
       const { data: docs } = await supabase
         .from('context_documents')
         .select('title, content, doc_type')
